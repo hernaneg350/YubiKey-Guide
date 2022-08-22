@@ -1,6 +1,6 @@
 This is a guide to using [YubiKey](https://www.yubico.com/products/yubikey-hardware/) as a [SmartCard](https://security.stackexchange.com/questions/38924/how-does-storing-gpg-ssh-private-keys-on-smart-cards-compare-to-plain-usb-drives) for storing GPG encryption, signing and authentication keys, which can also be used for SSH. Many of the principles in this document are applicable to other smart card devices.
 
-Keys stored on YubiKey are [non-exportable](https://support.yubico.com/support/solutions/articles/15000010242-can-i-duplicate-or-back-up-a-yubikey-) (as opposed to file-based keys that are stored on disk) and are convenient for everyday use. Instead of having to remember and enter passphrases to unlock SSH/GPG keys, YubiKey needs only a physical touch after being unlocked with a PIN. All signing and encryption operations happen on the card, rather than in OS memory.
+Keys stored on YubiKey are [non-exportable](http://web.archive.org/web/20201125172759/https://support.yubico.com/hc/en-us/articles/360016614880-Can-I-Duplicate-or-Back-Up-a-YubiKey-) (as opposed to file-based keys that are stored on disk) and are convenient for everyday use. Instead of having to remember and enter passphrases to unlock SSH/GPG keys, YubiKey needs only a physical touch after being unlocked with a PIN. All signing and encryption operations happen on the card, rather than in OS memory.
 
 **New!** [drduh/Purse](https://github.com/drduh/Purse) is a password manager which uses GPG and YubiKey.
 
@@ -12,6 +12,7 @@ If you have a comment or suggestion, please open an [Issue](https://github.com/d
 - [Prepare environment](#prepare-environment)
 - [Required software](#required-software)
   * [Debian and Ubuntu](#debian-and-ubuntu)
+  * [Fedora](#fedora)
   * [Arch](#arch)
   * [RHEL7](#rhel7)
   * [NixOS](#nixos)
@@ -29,6 +30,7 @@ If you have a comment or suggestion, please open an [Issue](https://github.com/d
   * [Encryption](#encryption)
   * [Authentication](#authentication)
   * [Add extra identities](#add-extra-identities)
+- [Create keys with --batch and --quick-add-key](#create-keys-with---batch-and---quick-add-keys)
 - [Verify](#verify)
 - [Export secret keys](#export-secret-keys)
 - [Revocation certificate](#revocation-certificate)
@@ -89,7 +91,7 @@ If you have a comment or suggestion, please open an [Issue](https://github.com/d
 
 # Purchase
 
-All YubiKeys except the blue "security key" model are compatible with this guide. NEO models are limited to 2048-bit RSA keys. Compare YubiKeys [here](https://www.yubico.com/products/yubikey-hardware/compare-products-series/). Yubico have also just released a press release and blog post about supporting resident ssh keys on their Yubikeys including blue "security key 5 NFC" with OpenSSH 8.2 or later, see [here](https://www.yubico.com/blog/github-now-supports-ssh-security-keys/) for details.
+All YubiKeys except the blue "security key" model are compatible with this guide. NEO models are limited to 2048-bit RSA keys. Compare YubiKeys [here](https://www.yubico.com/products/yubikey-hardware/compare-products-series/). In May 2021, Yubico also released a press release and blog post about supporting resident ssh keys on their Yubikeys including blue "security key 5 NFC" with OpenSSH 8.2 or later, see [here](https://www.yubico.com/blog/github-now-supports-ssh-security-keys/) for details.
 
 To verify a YubiKey is genuine, open a [browser with U2F support](https://support.yubico.com/support/solutions/articles/15000009591-how-to-confirm-your-yubico-device-is-genuine-with-u2f) to [https://www.yubico.com/genuine/](https://www.yubico.com/genuine/). Insert a Yubico device, and select *Verify Device* to begin the process. Touch the YubiKey when prompted, and if asked, allow it to see the make and model of the device. If you see *Verification complete*, the device is authentic.
 
@@ -102,7 +104,7 @@ You will also need several small storage devices (microSD cards work well) for s
 To create cryptographic keys, a secure environment that can be reasonably assured to be free of adversarial control is recommended. Here is a general ranking of environments most to least likely to be compromised:
 
 1. Daily-use operating system
-1. Virtual machine on daily-use host OS (using [virt-manager](https://virt-manager.org/), VirtualBox, or VMWare)
+1. Virtual machine on daily-use host OS (using [virt-manager](https://virt-manager.org/), VirtualBox, or VMware)
 1. Separate hardened [Debian](https://www.debian.org/) or [OpenBSD](https://www.openbsd.org/) installation which can be dual booted
 1. Live image, such as [Debian Live](https://www.debian.org/CD/live/) or [Tails](https://tails.boum.org/index.en.html)
 1. Secure hardware/firmware ([Coreboot](https://www.coreboot.org/), [Intel ME removed](https://github.com/corna/me_cleaner))
@@ -243,6 +245,15 @@ $ sudo service pcscd start
 $ ~/.local/bin/ykman openpgp info
 ```
 
+## Fedora
+```console
+$ sudo dnf install wget
+$ wget https://github.com/rpmsphere/noarch/raw/master/r/rpmsphere-release-34-2.noarch.rpm
+$ sudo rpm -Uvh rpmsphere-release*rpm
+
+$ sudo dnf install gnupg2 dirmngr cryptsetup gnupg2-smime pcsc-tools opensc pcsc-lite secure-delete pgp-tools yubikey-personalization-gui
+```
+
 ## Arch
 
 ```console
@@ -363,13 +374,12 @@ If you have a hardware device other than the CPU based one, install the accompan
 OneRNG specific example:
 
 ```
-$ sudo apt -y install python-gnupg
-$ wget https://github.com/OneRNG/onerng.github.io/raw/master/sw/onerng_3.6-1_all.deb
+$ wget https://github.com/OneRNG/onerng.github.io/raw/master/sw/onerng_3.7-1_all.deb
 
-$ sha256sum onerng_3.6-1_all.deb
-a9ccf7b04ee317dbfc91518542301e2d60ebe205d38e80563f29aac7cd845ccb  onerng_3.6-1_all.deb
+$ sha256sum onerng_3.7-1_all.deb
+b7cda2fe07dce219a95dfeabeb5ee0f662f64ba1474f6b9dddacc3e8734d8f57  onerng_3.7-1_all.deb
 
-$ sudo dpkg -i onerng_3.6-1_all.deb
+$ sudo dpkg -i onerng_3.7-1_all.deb
 
 $ echo "HRNGDEVICE=/dev/ttyACM0" | sudo tee /etc/default/rng-tools
 ```
@@ -794,8 +804,14 @@ gpg> save
 
 ## Add extra identities
 
-(Optional) To add additional email addresses or identities, use `adduid`:
+(Optional) To add additional email addresses or identities, use `adduid`.
 
+First open the keyring:
+```console
+$ gpg --expert --edit-key $KEYID
+```
+
+Then add the new identity:
 ```console
 gpg> adduid
 Real name: Dr Duh
@@ -886,6 +902,77 @@ gpg> save
 ```
 
 By default, the last identity added will be the primary user ID - use `primary` to change that.
+
+# Create keys with `--batch` and `--quick-add-keys`
+
+To remove some complexity from the process, we will show an alternate procedure to generate the keys using template files and the `--batch` parameter. For futher details, full GNUPG documentation can be found [at this link](https://www.gnupg.org/documentation/manuals/gnupg/Unattended-GPG-key-generation.html). This procedure will have just the same result as described above.
+
+For your convenience you can start from this RSA4096 key template: [gen-params-rsa4096](contrib/gen-params-rsa4096). If you're using GnuPG v2.1.7 or newer we strongly recommend generating ED25519 keys ([gen-params-ed25519](contrib/gen-params-ed25519), the procedure is the same). These templates will not set the master key to expire - see [Note #3](#notes).
+
+Generate a RSA4096 master key:
+
+```console
+$ gpg --batch --generate-key gen-params-rsa4096
+gpg: Generating a basic OpenPGP key
+gpg: key 0xEA5DE91459B80592 marked as ultimately trusted
+gpg: revocation certificate stored as '/tmp.FLZC0xcM/openpgp-revocs.d/D6F924841F78D62C65ABB9588B461860159FFB7B.rev'
+gpg: done
+```
+
+Let's check the result:
+
+```console
+$ gpg --list-key
+gpg: checking the trustdb
+gpg: marginals needed: 3  completes needed: 1  trust model: pgp
+gpg: depth: 0  valid:   1  signed:   0  trust: 0-, 0q, 0n, 0m, 0f, 1u
+/tmp.FLZC0xcM/pubring.kbx
+-------------------------------
+pub   rsa4096/0xFF3E7D88647EBCDB 2021-08-22 [C]
+       Key fingerprint = 011C E16B D45B 27A5 5BA8  776D FF3E 7D88 647E BCDB
+uid                   [ultimate] Dr Duh <doc@duh.to>
+```
+
+The key fingerprint (`011C E16B D45B 27A5 5BA8 776D FF3E 7D88 647E BCDB`) will be used to create the three subkeys for signing, authentication and encryption.
+
+Now create the three subkeys for signing, authentication and encryption. Use a 1 year expiration for sub-keys - they can be renewed using the offline master key, see [rotating keys](#rotating-keys).
+
+We will use the the quick key manipulation interface of GNUPG (with `--quick-add-key`), see [the documentation](https://www.gnupg.org/documentation/manuals/gnupg/Unattended-GPG-key-generation.html#Unattended-GPG-key-generation).
+
+Create a [signing subkey](https://stackoverflow.com/questions/5421107/can-rsa-be-both-used-as-encryption-and-signature/5432623#5432623):
+
+```console
+$ gpg --quick-add-key "011C E16B D45B 27A5 5BA8  776D FF3E 7D88 647E BCDB" \
+  rsa4096 sign 1y
+```
+
+Now create an [encryption subkey](https://www.cs.cornell.edu/courses/cs5430/2015sp/notes/rsa_sign_vs_dec.php):
+
+```console
+$ gpg --quick-add-key "011C E16B D45B 27A5 5BA8  776D FF3E 7D88 647E BCDB" \
+  rsa4096 encrypt 1y
+```
+
+Finally, create an [authentication subkey](https://superuser.com/questions/390265/what-is-a-gpg-with-authenticate-capability-used-for):
+
+```console
+$ gpg --quick-add-key "011C E16B D45B 27A5 5BA8  776D FF3E 7D88 647E BCDB" \
+  rsa4096 auth 1y
+```
+
+Let's check the final result:
+
+```console
+$ gpg --list-keys
+/tmp.FLZC0xcM/pubring.kbx
+-------------------------------
+pub   rsa4096/0xFF3E7D88647EBCDB 2021-08-22 [C]
+      Key fingerprint = 011C E16B D45B 27A5 5BA8  776D FF3E 7D88 647E BCDB
+uid                   [ultimate] Dr Duh <doc@duh.to>
+sub   rsa4096/0xBECFA3C1AE191D15 2017-10-09 [S] [expires: 2018-10-09]
+sub   rsa4096/0x5912A795E90DD2CF 2017-10-09 [E] [expires: 2018-10-09]
+sub   rsa4096/0x3F29127E79649A3D 2017-10-09 [A] [expires: 2018-10-09]
+```
 
 # Verify
 
@@ -1355,7 +1442,7 @@ Your selection? q
 The number of retry attempts can be changed with the following command, documented [here](https://docs.yubico.com/software/yubikey/tools/ykman/OpenPGP_Commands.html#ykman-openpgp-access-set-retries-options-pin-retries-reset-code-retries-admin-pin-retries):
 
 ```bash
-ykman openpgp access set-retries 5 5 5
+ykman openpgp set-pin-retries 5 5 5
 ```
 
 ## Set information
@@ -2395,7 +2482,7 @@ Create `$HOME/Library/LaunchAgents/gnupg.gpg-agent.plist` with the following con
 ```
 
 ```console
-launchctl load gnupg.gpg-agent.plist
+launchctl load $HOME/Library/LaunchAgents/gnupg.gpg-agent.plist
 ```
 
 Create `$HOME/Library/LaunchAgents/gnupg.gpg-agent-symlink.plist` with the following contens:
@@ -2420,7 +2507,7 @@ Create `$HOME/Library/LaunchAgents/gnupg.gpg-agent-symlink.plist` with the follo
 ```
 
 ```console
-launchctl load gnupg.gpg-agent-symlink.plist
+launchctl load $HOME/Library/LaunchAgents/gnupg.gpg-agent-symlink.plist
 ```
 
 You will need to either reboot, or log out and log back in, in order to activate these changes.
@@ -2718,6 +2805,8 @@ Before you unmount your backup, ask yourself if you should make another one just
 
 - If you still receive the error, `sign_and_send_pubkey: signing failed: agent refused operation` - edit `~/.gnupg/gpg-agent.conf` to set a valid `pinentry` program path, e.g. `pinentry-program /usr/local/bin/pinentry-mac` on macOS.
 
+- If you still receive the error, `sign_and_send_pubkey: signing failed: agent refused operation` - it is a [known issue](https://bbs.archlinux.org/viewtopic.php?id=274571) that openssh 8.9p1 and higher has issues with YubiKey. Adding `KexAlgorithms -sntrup761x25519-sha512@openssh.com` to `/etc/ssh/ssh_config` often resolves the issue.
+
 - If you receive the error, `The agent has no identities` from `ssh-add -L`, make sure you have installed and started `scdaemon`.
 
 - If you receive the error, `Error connecting to agent: No such file or directory` from `ssh-add -L`, the UNIX file socket that the agent uses for communication with other processes may not be set up correctly. On Debian, try `export SSH_AUTH_SOCK="/run/user/$UID/gnupg/S.gpg-agent.ssh"`. Also see that `gpgconf --list-dirs agent-ssh-socket` is returning single path, to existing `S.gpg-agent.ssh` socket.
@@ -2749,7 +2838,7 @@ Before you unmount your backup, ask yourself if you should make another one just
 
 # Alternatives
 
-*TODO: Information about other ways to authenticate SSH (e.g., without GPG) and other YubiKey features*
+* [`piv-agent`](https://github.com/smlx/piv-agent) is an SSH and GPG agent which you can use with your PIV hardware security device (e.g. a Yubikey).
 
 # Links
 
